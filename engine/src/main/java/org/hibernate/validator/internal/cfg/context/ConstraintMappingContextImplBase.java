@@ -6,16 +6,19 @@
  */
 package org.hibernate.validator.internal.cfg.context;
 
+import static org.hibernate.validator.internal.util.CollectionHelper.newHashSet;
+
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.Set;
 
+import org.hibernate.validator.internal.engine.cascading.ValueExtractors;
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.internal.metadata.core.MetaConstraint;
+import org.hibernate.validator.internal.metadata.core.MetaConstraints;
 import org.hibernate.validator.internal.metadata.descriptor.ConstraintDescriptorImpl;
 import org.hibernate.validator.internal.metadata.descriptor.ConstraintDescriptorImpl.ConstraintType;
-
-import static org.hibernate.validator.internal.util.CollectionHelper.newHashSet;
+import org.hibernate.validator.internal.util.TypeResolutionHelper;
 
 /**
  * Base class for implementations of constraint mapping creational context types.
@@ -54,11 +57,13 @@ abstract class ConstraintMappingContextImplBase extends ConstraintContextImplBas
 	/**
 	 * Converts all constraints managed by this creational context into {@link MetaConstraint}s.
 	 *
-	 * @param constraintHelper constraint helper required for creation of meta constraints.
-	 *
-	 * @return All constraints of this context as meta constraints.
+	 * @param constraintHelper constraint helper required for creation of meta constraints
+	 * @param the type resolution helper
+	 * @param valueExtractors the {ValueExtractor} registry
+	 * @return all constraints of this context as meta constraints
 	 */
-	protected Set<MetaConstraint<?>> getConstraints(ConstraintHelper constraintHelper) {
+	protected Set<MetaConstraint<?>> getConstraints(ConstraintHelper constraintHelper, TypeResolutionHelper typeResolutionHelper,
+			ValueExtractors valueExtractors) {
 		if ( constraints == null ) {
 			return Collections.emptySet();
 		}
@@ -66,13 +71,14 @@ abstract class ConstraintMappingContextImplBase extends ConstraintContextImplBas
 		Set<MetaConstraint<?>> metaConstraints = newHashSet();
 
 		for ( ConfiguredConstraint<?> configuredConstraint : constraints ) {
-			metaConstraints.add( asMetaConstraint( configuredConstraint, constraintHelper ) );
+			metaConstraints.add( asMetaConstraint( configuredConstraint, constraintHelper, typeResolutionHelper, valueExtractors ) );
 		}
 
 		return metaConstraints;
 	}
 
-	private <A extends Annotation> MetaConstraint<A> asMetaConstraint(ConfiguredConstraint<A> config, ConstraintHelper constraintHelper) {
+	private <A extends Annotation> MetaConstraint<A> asMetaConstraint(ConfiguredConstraint<A> config, ConstraintHelper constraintHelper,
+			TypeResolutionHelper typeResolutionHelper, ValueExtractors valueExtractors) {
 		ConstraintDescriptorImpl<A> constraintDescriptor = new ConstraintDescriptorImpl<A>(
 				constraintHelper,
 				config.getLocation().getMember(),
@@ -81,6 +87,6 @@ abstract class ConstraintMappingContextImplBase extends ConstraintContextImplBas
 				getConstraintType()
 		);
 
-		return new MetaConstraint<A>( constraintDescriptor, config.getLocation() );
+		return MetaConstraints.create( typeResolutionHelper, valueExtractors, constraintDescriptor, config.getLocation() );
 	}
 }

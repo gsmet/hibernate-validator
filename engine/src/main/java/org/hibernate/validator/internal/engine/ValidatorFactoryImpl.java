@@ -149,17 +149,6 @@ public class ValidatorFactoryImpl implements HibernateValidatorFactory {
 		this.typeResolutionHelper = new TypeResolutionHelper();
 		this.executableHelper = new ExecutableHelper( typeResolutionHelper );
 
-
-		// HV-302; don't load XmlMappingParser if not necessary
-		if ( configurationState.getMappingStreams().isEmpty() ) {
-			this.xmlMetaDataProvider = null;
-		}
-		else {
-			this.xmlMetaDataProvider = new XmlMetaDataProvider(
-					constraintHelper, parameterNameProvider, configurationState.getMappingStreams(), externalClassLoader
-			);
-		}
-
 		this.constraintMappings = Collections.unmodifiableSet(
 				getConstraintMappings(
 						configurationState,
@@ -230,6 +219,16 @@ public class ValidatorFactoryImpl implements HibernateValidatorFactory {
 		);
 
 		this.constraintValidatorManager = new ConstraintValidatorManager( configurationState.getConstraintValidatorFactory() );
+
+		// HV-302; don't load XmlMappingParser if not necessary
+		if ( configurationState.getMappingStreams().isEmpty() ) {
+			this.xmlMetaDataProvider = null;
+		}
+		else {
+			this.xmlMetaDataProvider = new XmlMetaDataProvider(
+					constraintHelper, typeResolutionHelper, parameterNameProvider, valueExtractors, configurationState.getMappingStreams(), externalClassLoader
+			);
+		}
 	}
 
 	private static ClassLoader getExternalClassLoader(ConfigurationState configurationState) {
@@ -357,7 +356,9 @@ public class ValidatorFactoryImpl implements HibernateValidatorFactory {
 			beanMetaDataManager = new BeanMetaDataManager(
 					constraintHelper,
 					executableHelper,
+					typeResolutionHelper,
 					parameterNameProvider,
+					valueExtractors,
 					buildDataProviders( parameterNameProvider ),
 					methodValidationConfiguration
 			);
@@ -391,7 +392,9 @@ public class ValidatorFactoryImpl implements HibernateValidatorFactory {
 			metaDataProviders.add(
 					new ProgrammaticMetaDataProvider(
 							constraintHelper,
+							typeResolutionHelper,
 							parameterNameProvider,
+							valueExtractors,
 							constraintMappings
 					)
 			);
