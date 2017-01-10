@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-
 import javax.validation.Valid;
 import javax.validation.groups.ConvertGroup;
 
@@ -38,6 +37,7 @@ import org.hibernate.validator.internal.util.annotationfactory.AnnotationFactory
 import org.hibernate.validator.internal.util.logging.Log;
 import org.hibernate.validator.internal.util.logging.LoggerFactory;
 import org.hibernate.validator.valuehandling.UnwrapValidatedValue;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
@@ -81,33 +81,17 @@ public abstract class AbstractConstrainedElementJandexBuilder {
 		}
 
 		List<Type> arguments = information.getType().asParameterizedType().arguments();
-		Optional<Type> argument;
-		if ( arguments.size() == 1 ) {
-			argument = Optional.of( arguments.get( 0 ) );
-		}
-		else if ( jandexHelper.isMap( information.getType() ) ) {
-			argument = Optional.of( arguments.get( 1 ) );
-		}
-		else {
-			argument = Optional.empty();
-		}
-		if ( argument.isPresent() ) {
-			// HV-925
-			// We need to determine the validated type used for constraint validator resolution.
-			// Iterables and maps need special treatment at this point, since the validated type is the type of the
-			// specified type parameter. In the other cases the validated type is the parameterized type, eg Optional<String>.
-			// In the latter case a value unwrapping has to occur
-			Type validatedType = information.getType();
-			if ( jandexHelper.isIterable( validatedType ) || jandexHelper.isMap( validatedType ) ) {
-				validatedType = argument.get();
-			}
-			Class<?> memberType = jandexHelper.getClassForName( validatedType.name() );
-			return findConstrainAnnotations( argument.get().annotations() )
-					.flatMap( annotationInstance -> findConstraintAnnotations( information.getMember(), annotationInstance ) )
-					.map( constraintDescriptor -> createTypeArgumentMetaConstraint( information.getConstraintLocation(), constraintDescriptor, memberType ) );
-		}
-
-		return Stream.empty();
+		return arguments.stream()
+				.flatMap( argumentType -> {
+					Class<?> memberType = jandexHelper.getClassForName( argumentType.name() );
+					return findConstrainAnnotations( argumentType.annotations() )
+							.flatMap( annotationInstance -> findConstraintAnnotations( information.getMember(), annotationInstance ) )
+							.map( constraintDescriptor -> createTypeArgumentMetaConstraint(
+									information.getConstraintLocation(),
+									constraintDescriptor,
+									memberType
+							) );
+				} );
 	}
 
 	protected CommonConstraintInformation findCommonConstraintInformation(Type type, Collection<AnnotationInstance> annotationInstances,

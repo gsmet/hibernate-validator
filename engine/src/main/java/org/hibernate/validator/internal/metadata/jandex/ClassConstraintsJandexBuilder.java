@@ -9,6 +9,7 @@ package org.hibernate.validator.internal.metadata.jandex;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,6 +22,7 @@ import org.hibernate.validator.internal.metadata.location.ConstraintLocation;
 import org.hibernate.validator.internal.metadata.raw.ConfigurationSource;
 import org.hibernate.validator.internal.metadata.raw.ConstrainedElement;
 import org.hibernate.validator.internal.metadata.raw.ConstrainedType;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -43,10 +45,17 @@ public class ClassConstraintsJandexBuilder extends AbstractConstrainedElementJan
 			return Stream.empty();
 		}
 
+		Set<MetaConstraint<?>> constraints = findMetaConstraints( classInfo.classAnnotations(), beanClass ).collect( Collectors.toSet() );
+
+		// if there are no constraints on a type level - we need to return empty stream
+		if ( constraints.isEmpty() ) {
+			return Stream.empty();
+		}
+		//otherwise we return a stream with one ConstrainedType
 		return Stream.of( new ConstrainedType(
 				ConfigurationSource.JANDEX,
 				beanClass,
-				findMetaConstraints( classInfo.classAnnotations(), beanClass ).collect( Collectors.toSet() )
+				constraints
 		) );
 	}
 
