@@ -116,6 +116,8 @@ public class ValidationExtension implements Extension {
 		// as it hasn't been turned into a managed bean yet and might not be able to
 		// return a parameter name. At this stage, we don't care about the parameter names.
 		config.parameterNameProvider( config.getDefaultParameterNameProvider() );
+		// we use the default ConstraintValidatorFactory here as we cannot use the injected one
+		config.constraintValidatorFactory( config.getDefaultConstraintValidatorFactory() );
 		BootstrapConfiguration bootstrap = config.getBootstrapConfiguration();
 		globalExecutableTypes = bootstrap.getDefaultValidatedExecutableTypes();
 		isExecutableValidationEnabled = bootstrap.isExecutableValidationEnabled();
