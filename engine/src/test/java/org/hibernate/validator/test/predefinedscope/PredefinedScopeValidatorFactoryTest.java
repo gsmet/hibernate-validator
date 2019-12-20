@@ -182,24 +182,6 @@ public class PredefinedScopeValidatorFactoryTest {
 		assertNoViolations( violations );
 	}
 
-	@Test(expectedExceptions = ValidationException.class, expectedExceptionsMessageRegExp = "HV000250:.*")
-	public void testUninitializedLocale() {
-		Locale defaultLocale = Locale.getDefault();
-
-		try {
-			Locale.setDefault( Locale.FRANCE );
-
-			Validator validator = getValidatorWithInitializedLocale( Locale.ENGLISH );
-
-			Set<ConstraintViolation<Bean>> violations = validator.validate( new Bean( "", "invalid" ) );
-			assertThat( violations ).containsOnlyViolations(
-					violationOf( Email.class ).withProperty( "email" ).withMessage( "doit être une adresse électronique syntaxiquement correcte" ) );
-		}
-		finally {
-			Locale.setDefault( defaultLocale );
-		}
-	}
-
 	@Test
 	public void testBeanMetaDataClassNormalizerNoNormalizer() {
 		// In this case, as we haven't registered any metadata for the hierarchy, even if we have constraints,
