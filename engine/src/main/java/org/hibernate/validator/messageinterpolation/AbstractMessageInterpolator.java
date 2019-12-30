@@ -12,6 +12,7 @@ import static org.hibernate.validator.internal.util.logging.Messages.MESSAGES;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Locale.LanguageRange;
@@ -269,7 +270,7 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 		Contracts.assertNotNull( localeResolver, MESSAGES.parameterMustNotBeNull( "localeResolver" ) );
 
 		this.defaultLocale = defaultLocale;
-		initializedLocales = CollectionHelper.toImmutableSet( localesToInitialize );
+		this.initializedLocales = CollectionHelper.toImmutableSet( getAllLocales( localesToInitialize, defaultLocale ) );
 		this.localeResolverContext = new DefaultLocaleResolverContext( localesToInitialize, defaultLocale );
 		this.localeResolver = localeResolver;
 
@@ -364,6 +365,17 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 			LOG.warn( e.getMessage() );
 		}
 		return interpolatedMessage;
+	}
+
+	private Set<Locale> getAllLocales(Set<Locale> localesToInitialize, Locale defaultLocale) {
+		if ( localesToInitialize.contains( defaultLocale ) ) {
+			return localesToInitialize;
+		}
+
+		Set<Locale> allLocales = new HashSet<>( localesToInitialize.size() + 1 );
+		allLocales.addAll( localesToInitialize );
+		allLocales.add( defaultLocale );
+		return allLocales;
 	}
 
 	private Locale determineLocale(List<LanguageRange> languagePriorities) {
