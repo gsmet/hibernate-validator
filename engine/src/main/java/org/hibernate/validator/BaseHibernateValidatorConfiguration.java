@@ -7,6 +7,8 @@
 package org.hibernate.validator;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
@@ -384,6 +386,23 @@ public interface BaseHibernateValidatorConfiguration<S extends BaseHibernateVali
 	 */
 	@Incubating
 	S locales(Set<Locale> locales);
+
+	/**
+	 * Allows to set the list of the locales supported by this ValidatorFactory.
+	 * <p>
+	 * Can be used for advanced locale resolution and/or to force the initialization of the resource bundles at
+	 * bootstrap.
+	 * <p>
+	 * If not set, defaults to a singleton containing {@link Locale#getDefault()}.
+	 *
+	 * @since 6.1.1
+	 */
+	@SuppressWarnings("unchecked")
+	@Incubating
+	default S locales(Locale... locales) {
+		locales( new HashSet<>( Arrays.asList( locales ) ) );
+		return (S) this;
+	}
 
 	/**
 	 * Allows to set the default locale used to interpolate the constraint violation messages.
