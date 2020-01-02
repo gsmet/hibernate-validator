@@ -373,6 +373,19 @@ public interface BaseHibernateValidatorConfiguration<S extends BaseHibernateVali
 	S propertyNodeNameProvider(PropertyNodeNameProvider propertyNodeNameProvider);
 
 	/**
+	 * Allows to set the list of the locales supported by this ValidatorFactory.
+	 * <p>
+	 * Can be used for advanced locale resolution and/or to force the initialization of the resource bundles at
+	 * bootstrap.
+	 * <p>
+	 * If not set, defaults to a singleton containing {@link Locale#getDefault()}.
+	 *
+	 * @since 6.1.1
+	 */
+	@Incubating
+	S locales(Set<Locale> locales);
+
+	/**
 	 * Allows to set the default locale used to interpolate the constraint violation messages.
 	 * <p>
 	 * If not set, defaults to the system locale obtained via {@link Locale#getDefault()}.

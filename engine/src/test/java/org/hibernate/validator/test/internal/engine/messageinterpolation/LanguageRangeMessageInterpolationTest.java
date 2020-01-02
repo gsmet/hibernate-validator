@@ -4,7 +4,7 @@
  * License: Apache License, Version 2.0
  * See the license.txt file in the root directory or <http://www.apache.org/licenses/LICENSE-2.0>.
  */
-package org.hibernate.validator.test.predefinedscope;
+package org.hibernate.validator.test.internal.engine.messageinterpolation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,7 +18,7 @@ import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
 import javax.validation.metadata.ConstraintDescriptor;
 
-import org.hibernate.validator.PredefinedScopeHibernateValidator;
+import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.messageinterpolation.HibernateMessageInterpolator;
 import org.hibernate.validator.testutil.TestForIssue;
 import org.testng.annotations.Test;
@@ -66,27 +66,22 @@ public class LanguageRangeMessageInterpolationTest {
 	}
 
 	private static ValidatorFactory getValidatorFactoryWithInitializedLocales(Locale... locales) {
-		ValidatorFactory validatorFactory = Validation.byProvider( PredefinedScopeHibernateValidator.class )
+		ValidatorFactory validatorFactory = Validation.byProvider( HibernateValidator.class )
 				.configure()
 				.locales( new HashSet<>( Arrays.asList( locales ) ) )
-				.initializeBeanMetaData( new HashSet<>( Arrays.asList( Bean.class ) ) )
 				.buildValidatorFactory();
 
 		return validatorFactory;
 	}
 
 	private static ValidatorFactory getValidatorFactoryWithDefaultLocaleAndInitializedLocales(Locale defaultLocale, Locale... locales) {
-		ValidatorFactory validatorFactory = Validation.byProvider( PredefinedScopeHibernateValidator.class )
+		ValidatorFactory validatorFactory = Validation.byProvider( HibernateValidator.class )
 				.configure()
 				.locales( new HashSet<>( Arrays.asList( locales ) ) )
 				.defaultLocale( defaultLocale )
-				.initializeBeanMetaData( new HashSet<>( Arrays.asList( Bean.class ) ) )
 				.buildValidatorFactory();
 
 		return validatorFactory;
-	}
-
-	private static class Bean {
 	}
 
 	private static class TestContext implements MessageInterpolator.Context {

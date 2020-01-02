@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 import javax.validation.ValidationException;
 
 import org.hibernate.validator.Incubating;
+import org.hibernate.validator.internal.engine.PredefinedScopeValidatorFactoryImpl;
 import org.hibernate.validator.internal.engine.messageinterpolation.DefaultLocaleResolver;
 import org.hibernate.validator.internal.engine.messageinterpolation.DefaultLocaleResolverContext;
 import org.hibernate.validator.internal.engine.messageinterpolation.InterpolationTermType;
@@ -97,9 +98,9 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 	private final Locale defaultLocale;
 
 	/**
-	 * The list of initialized locales.
+	 * The list of supported locales.
 	 */
-	private final Set<Locale> initializedLocales;
+	private final Set<Locale> locales;
 
 	/**
 	 * The locale resolver.
@@ -155,7 +156,7 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 	 * {@code MessageInterpolator} using the default resource bundle locators.
 	 */
 	public AbstractMessageInterpolator() {
-		this( Collections.emptySet(), Locale.getDefault(), new DefaultLocaleResolver() );
+		this( Collections.emptySet(), Locale.getDefault(), new DefaultLocaleResolver(), false );
 	}
 
 	/**
@@ -164,7 +165,7 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 	 * @param userResourceBundleLocator {@code ResourceBundleLocator} used to load user provided resource bundle
 	 */
 	public AbstractMessageInterpolator(ResourceBundleLocator userResourceBundleLocator) {
-		this( userResourceBundleLocator, Collections.emptySet(), Locale.getDefault(), new DefaultLocaleResolver() );
+		this( userResourceBundleLocator, Collections.emptySet(), Locale.getDefault(), new DefaultLocaleResolver(), false );
 	}
 
 	/**
@@ -176,7 +177,7 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 	 */
 	public AbstractMessageInterpolator(ResourceBundleLocator userResourceBundleLocator,
 			ResourceBundleLocator contributorResourceBundleLocator) {
-		this( userResourceBundleLocator, contributorResourceBundleLocator, Collections.emptySet(), Locale.getDefault(), new DefaultLocaleResolver() );
+		this( userResourceBundleLocator, contributorResourceBundleLocator, Collections.emptySet(), Locale.getDefault(), new DefaultLocaleResolver(), false );
 	}
 
 	/**
@@ -197,33 +198,38 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 	/**
 	 * {@code MessageInterpolator} using the default resource bundle locators.
 	 *
-	 * @param localesToInitialize the set of locales to initialize at bootstrap
+	 * @param locales the set of locales to initialize at bootstrap
 	 * @param defaultLocale the default locale
 	 * @param localeResolver the locale resolver
+	 * @param preloadResourceBundles if the resource bundled should be initialized at initialization time, this is useful in the case of a
+	 * {@link PredefinedScopeValidatorFactoryImpl}
 	 *
 	 * @since 6.1.1
 	 */
 	@Incubating
-	public AbstractMessageInterpolator(Set<Locale> localesToInitialize, Locale defaultLocale, LocaleResolver localeResolver) {
-		this( null, localesToInitialize, defaultLocale, localeResolver );
+	public AbstractMessageInterpolator(Set<Locale> locales, Locale defaultLocale, LocaleResolver localeResolver, boolean preloadResourceBundles) {
+		this( null, locales, defaultLocale, localeResolver, preloadResourceBundles );
 	}
 
 	/**
 	 * {@code MessageInterpolator} taking a resource bundle locator.
 	 *
 	 * @param userResourceBundleLocator {@code ResourceBundleLocator} used to load user provided resource bundle
-	 * @param localesToInitialize the set of locales to initialize at bootstrap
+	 * @param locales the set of locales to initialize at bootstrap
 	 * @param defaultLocale the default locale
 	 * @param localeResolver the locale resolver
+	 * @param preloadResourceBundles if the resource bundled should be initialized at initialization time, this is useful in the case of a
+	 * {@link PredefinedScopeValidatorFactoryImpl}
 	 *
 	 * @since 6.1.1
 	 */
 	@Incubating
 	public AbstractMessageInterpolator(ResourceBundleLocator userResourceBundleLocator,
-			Set<Locale> localesToInitialize,
+			Set<Locale> locales,
 			Locale defaultLocale,
-			LocaleResolver localeResolver) {
-		this( userResourceBundleLocator, null, localesToInitialize, defaultLocale, localeResolver );
+			LocaleResolver localeResolver,
+			boolean preloadResourceBundles) {
+		this( userResourceBundleLocator, null, locales, defaultLocale, localeResolver, preloadResourceBundles );
 	}
 
 	/**
@@ -234,27 +240,8 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 	 * @param localesToInitialize the set of locales to initialize at bootstrap
 	 * @param defaultLocale the default locale
 	 * @param localeResolver the locale resolver
-	 *
-	 * @since 6.1.1
-	 */
-	@Incubating
-	public AbstractMessageInterpolator(ResourceBundleLocator userResourceBundleLocator,
-			ResourceBundleLocator contributorResourceBundleLocator,
-			Set<Locale> localesToInitialize,
-			Locale defaultLocale,
-			LocaleResolver localeResolver) {
-		this( userResourceBundleLocator, contributorResourceBundleLocator, localesToInitialize, defaultLocale, localeResolver, true );
-	}
-
-	/**
-	 * {@code MessageInterpolator} taking two resource bundle locators.
-	 *
-	 * @param userResourceBundleLocator {@code ResourceBundleLocator} used to load user provided resource bundle
-	 * @param contributorResourceBundleLocator {@code ResourceBundleLocator} used to load resource bundle of constraint contributor
-	 * @param localesToInitialize the set of locales to initialize at bootstrap
-	 * @param defaultLocale the default locale
-	 * @param cacheMessages whether resolved messages should be cached or not
-	 * @param localeResolver the locale resolver
+	 * @param preloadResourceBundles if the resource bundled should be initialized at initialization time, this is useful in the case of a
+	 * {@link PredefinedScopeValidatorFactoryImpl}
 	 *
 	 * @since 6.1.1
 	 */
@@ -264,18 +251,47 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 			Set<Locale> localesToInitialize,
 			Locale defaultLocale,
 			LocaleResolver localeResolver,
+			boolean preloadResourceBundles) {
+		this( userResourceBundleLocator, contributorResourceBundleLocator, localesToInitialize, defaultLocale, localeResolver, preloadResourceBundles, true );
+	}
+
+	/**
+	 * {@code MessageInterpolator} taking two resource bundle locators.
+	 *
+	 * @param userResourceBundleLocator {@code ResourceBundleLocator} used to load user provided resource bundle
+	 * @param contributorResourceBundleLocator {@code ResourceBundleLocator} used to load resource bundle of constraint
+	 * contributor
+	 * @param locales the set of locales to initialize at bootstrap
+	 * @param defaultLocale the default locale
+	 * @param cacheMessages whether resolved messages should be cached or not
+	 * @param localeResolver the locale resolver
+	 * @param preloadResourceBundles if the resource bundled should be initialized at initialization time, this is useful in the case of a
+	 * {@link PredefinedScopeValidatorFactoryImpl}
+	 *
+	 * @since 6.1.1
+	 */
+	@Incubating
+	public AbstractMessageInterpolator(ResourceBundleLocator userResourceBundleLocator,
+			ResourceBundleLocator contributorResourceBundleLocator,
+			Set<Locale> locales,
+			Locale defaultLocale,
+			LocaleResolver localeResolver,
+			boolean preloadResourceBundles,
 			boolean cacheMessages) {
-		Contracts.assertNotNull( localesToInitialize, MESSAGES.parameterMustNotBeNull( "localesToInitialize" ) );
+		Contracts.assertNotNull( locales, MESSAGES.parameterMustNotBeNull( "localesToInitialize" ) );
 		Contracts.assertNotNull( defaultLocale, MESSAGES.parameterMustNotBeNull( "defaultLocale" ) );
 		Contracts.assertNotNull( localeResolver, MESSAGES.parameterMustNotBeNull( "localeResolver" ) );
 
 		this.defaultLocale = defaultLocale;
-		this.initializedLocales = CollectionHelper.toImmutableSet( getAllLocales( localesToInitialize, defaultLocale ) );
-		this.localeResolverContext = new DefaultLocaleResolverContext( localesToInitialize, defaultLocale );
+		this.locales = CollectionHelper.toImmutableSet( getAllLocales( locales, defaultLocale ) );
+		this.localeResolverContext = new DefaultLocaleResolverContext( locales, defaultLocale );
 		this.localeResolver = localeResolver;
 
+		Set<Locale> localesToInitialize = preloadResourceBundles ? locales : Collections.emptySet();
+
 		if ( userResourceBundleLocator == null ) {
-			this.userResourceBundleLocator = new PlatformResourceBundleLocator( USER_VALIDATION_MESSAGES, localesToInitialize );
+			this.userResourceBundleLocator = new PlatformResourceBundleLocator( USER_VALIDATION_MESSAGES,
+					preloadResourceBundles, localesToInitialize );
 		}
 		else {
 			this.userResourceBundleLocator = userResourceBundleLocator;
@@ -284,6 +300,7 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 		if ( contributorResourceBundleLocator == null ) {
 			this.contributorResourceBundleLocator = new PlatformResourceBundleLocator(
 					CONTRIBUTOR_VALIDATION_MESSAGES,
+					preloadResourceBundles,
 					localesToInitialize,
 					null,
 					true
@@ -293,7 +310,7 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 			this.contributorResourceBundleLocator = contributorResourceBundleLocator;
 		}
 
-		this.defaultResourceBundleLocator = new PlatformResourceBundleLocator( DEFAULT_VALIDATION_MESSAGES, localesToInitialize );
+		this.defaultResourceBundleLocator = new PlatformResourceBundleLocator( DEFAULT_VALIDATION_MESSAGES, preloadResourceBundles, localesToInitialize );
 
 		this.cachingEnabled = cacheMessages;
 		if ( cachingEnabled ) {
@@ -380,7 +397,7 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 
 	private Locale determineLocale(List<LanguageRange> languagePriorities) {
 		// If we have only one locale initialized, we use it (it will always be the default locale).
-		if ( initializedLocales.size() <= 1 || languagePriorities.isEmpty() ) {
+		if ( locales.size() <= 1 || languagePriorities.isEmpty() ) {
 			return defaultLocale;
 		}
 
@@ -389,7 +406,7 @@ public abstract class AbstractMessageInterpolator implements HibernateMessageInt
 		// initialized a locale, we consider it usable for all messages so, if one is not defined, you will end up
 		// with the default one: it won't fallback to the other locales defined in languagePriorities.
 		Locale locale;
-		List<Locale> candidateLocales = Locale.filter( languagePriorities, initializedLocales );
+		List<Locale> candidateLocales = Locale.filter( languagePriorities, locales );
 		if ( !candidateLocales.isEmpty() ) {
 			locale = candidateLocales.get( 0 );
 		}
